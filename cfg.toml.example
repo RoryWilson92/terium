@@ -1,0 +1,7 @@
+[trilateration_sensor]
+wifi_ssid = "Your 2.4 GHz Wi-Fi"
+wifi_psk = "your-wifi-password"
+supabase_url = "https://your-project-ref.supabase.co"
+supabase_key = "sb_publishable_..."
+sensor_key = "your-shared-sensor-secret"
+log_serial = false
