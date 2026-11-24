@@ -1,8 +1,8 @@
-# Trilateration v2: Implementation Plan
+# terium v2: Implementation Plan
 
 A personal passion project. **Keep it small:** as few files, tables and lines of code as reasonably possible, while staying easy to read and extend. When in doubt, choose the simpler option and note the alternative in a code comment or README line rather than building it.
 
-The agent works inside `trilateration_sensor/`, which becomes the git repository. Don't touch anything outside it.
+The agent works inside `terium_sensor/`, which becomes the git repository. Don't touch anything outside it.
 
 ---
 
@@ -36,7 +36,7 @@ flowchart LR
 ## 3. Repository layout
 
 ```
-trilateration_sensor/
+terium_sensor/
 ├── PLAN.md
 ├── README.md              # setup, flashing, registering sensors, the toggle, read API, privacy
 ├── .gitignore             # target/, .embuild/, cfg.toml, legacy-2024/, .env*, supabase/.temp
@@ -68,7 +68,7 @@ Constants in `main.rs`. These are firmware build settings. Changing one means re
 | Constant                  | Value  | What it controls                                                                                                                                                                                                                                                                                           |
 | ------------------------- | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `UPLOAD_INTERVAL`         | 5 s    | How often each sensor sends one HTTPS request. It does not change how often frames are sniffed. It only batches the readings gathered since the last successful upload. Five seconds is the freshness we want; the cost is request volume (§8).                                                            |
-| `SLOT`                    | 2 s    | How long a burst of frames from one device is collapsed into a single reading. `slot` is the unix time rounded down to a multiple of 2. A phone streaming video can send hundreds of frames in that window; we store one RSSI, the strongest. This is what limits database rows. Upload interval does not. |
+| `SLOT`                    | 2 s    | How long a burst of frames from one device is collapsed into a single reading. `slot` is the unix time rounded down to a multiple of 2. A phone streaming video can send hundreds of frames in that window; we store one RSSI, the median. This is what limits database rows. Upload interval does not. |
 | `MAX_READINGS`            | 2000   | Most distinct `(device, slot)` pairs held in RAM waiting for a successful upload. Past this, further devices are skipped until the upload succeeds and the map is cleared. It stops a failed upload, or a huge crowd of phones, from growing memory without bound.                                         |
 | `MAX_LOCAL_APS`           | 8      | Most mesh access points remembered from beacons advertising our SSID, plus the AP we are associated with. A house mesh is a handful of nodes. 8 is a safety cap so a neighbour's lookalike traffic, or a bug, cannot grow the set forever. The associated BSSID is always kept.                            |
 | `MAX_LOCAL_DEVICES`       | 64     | Most phone MACs remembered because we have seen them on our network (§4.3). Same idea as the AP cap: enough for a house, bounded so it cannot grow without limit. When full, the oldest entry is dropped.                                                                                                  |
@@ -94,9 +94,9 @@ Constants in `main.rs`. These are firmware build settings. Changing one means re
      - A **data** frame addressed to one of our mesh APs means that phone is on our network. Remember its MAC (`local_devices`, capped and expired as in §4.1) and keep the frame.
      - A **data** frame addressed to some other network is ignored in the default mode. All-devices mode keeps it and does not remember the MAC.
      - A **probe request** is kept in the default mode when it is from a phone we already remember, or when the probe itself names our SSID (a phone looking for our network, which is how a phone sitting on the 5 GHz radio still shows up). Remember that MAC too. Any other probe is ignored in the default mode and kept in all-devices mode.
-     - A kept frame updates `readings[(mac, slot)] = max(existing, rssi)`, where `slot = unix_secs / 2 * 2`. One phone in one 2-second slot is one entry: the strongest signal, not a row per frame. Stop adding new entries when `MAX_READINGS` is reached.
+     - A kept frame increments a 100-bin histogram for `readings[(mac, slot)]`, where `slot = unix_secs / 2 * 2`. Bins are one dBm from −100 to −1. Other strengths are ignored, because ingest rejects them. When the slot closes, the uploaded value is the median: the middle frame, or the nearest dBm to the mean of the two middle frames, with a halfway result rounding weaker. One phone in one 2-second slot is one entry. Stop adding new entries when `MAX_READINGS` is reached. A closed slot keeps only that median, so a failed upload does not hold the counts.
 4. **Upload** (every 5 s):
-   - Send only **finished** slots (the 2-second window has ended). The slot still in progress stays in memory, so its RSSI can keep rising until the window closes. Five seconds is not a multiple of two, so an upload will usually contain two finished slots and leave one open.
+   - Send only **finished** slots (the 2-second window has ended). The slot still in progress stays in memory, so later frames still join its median until the window closes. Five seconds is not a multiple of two, so an upload will usually contain two finished slots and leave one open.
    - `POST {supabase_url}/rest/v1/rpc/ingest` (§4.4) over TLS using ESP-IDF's certificate bundle.
    - **On success:** drop the slots just sent and apply the returned `scan_all_devices`.
    - **On failure:** keep them and retry next interval. The cap bounds memory. Sending the same slot twice is harmless because the table's primary key ignores the duplicate.
@@ -179,7 +179,7 @@ No policies give `anon` any table access. Sensors write only through the RPC.
 
 ### 5.3 Positioning: `private.compute_positions()`, every 5 s via pg_cron
 
-1. For each `(device_mac, sensor)` with readings in the last 30 s, take `avg(rssi)`. Use only sensors with a position, and skip any `device_mac` that belongs to a sensor (`'esp-' || device_mac = sensors.id`).
+1. For each `(device_mac, sensor)` with readings in the last 5 s, take `avg(rssi)`. Use only sensors with a position, and skip any `device_mac` that belongs to a sensor (`'esp-' || device_mac = sensors.id`).
 2. Keep devices heard by **≥ 4 sensors**. Convert each average to a distance: `d = 10 ^ ((ref_rssi - rssi) / (10 * path_loss))`, clamped to 0.3–25 m.
 3. `**private.solve(xs, ys, zs, ds real[])` returns `(x, y, z, error_m)`.** It's a small, separately testable function using weighted Gauss–Newton (weights `1/d²`) with 3×3 normal equations solved by Cramer's rule, for at most 10 iterations. The function must not `RAISE NOTICE` or `RAISE LOG`; it runs every 5 s and each notice becomes log ingest (§8).
    - Start at the weighted centroid of the sensors.

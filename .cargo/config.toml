@@ -1,9 +1,10 @@
+# Classic ESP32, with ESP-IDF providing the standard library.
 [build]
 target = "xtensa-esp32-espidf"
 
 [target.'cfg(target_os = "espidf")']
 linker = "ldproxy"
-runner = "espflash flash --monitor"
+# Match the 64-bit time_t in this ESP-IDF version.
 rustflags = ["--cfg", "espidf_time64"]
 
 [unstable]

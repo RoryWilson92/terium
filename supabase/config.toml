@@ -1,0 +1,33 @@
+# Local stack. Services this project does not use stay off. Hosted setup is in the README.
+project_id = "terium_sensor"
+
+[api]
+port = 55321
+schemas = ["public"]
+
+[db]
+port = 55322
+shadow_port = 55320
+major_version = 17
+
+[auth]
+site_url = "http://127.0.0.1:3000"
+enable_signup = false
+
+[studio]
+enabled = false
+
+[inbucket]
+enabled = false
+
+[realtime]
+enabled = false
+
+[storage]
+enabled = false
+
+[analytics]
+enabled = false
+
+[edge_runtime]
+enabled = false

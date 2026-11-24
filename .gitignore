@@ -2,7 +2,7 @@
 /.embuild/
 /.local/
 /cfg.toml
-/legacy-2024/
 .env*
 /supabase/.temp/
 .DS_Store
+.vscode/

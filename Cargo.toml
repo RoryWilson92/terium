@@ -1,9 +1,10 @@
 [package]
-name = "trilateration_sensor"
+name = "terium_sensor"
 version = "0.1.0"
 edition = "2021"
 rust-version = "1.82"
 
+# Prefer a smaller image over a faster one. It has to fit the app partition.
 [profile.release]
 opt-level = "s"
 

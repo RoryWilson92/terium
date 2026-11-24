@@ -1,2 +1,5 @@
+#:schema rust-toolchain.schema.json
+
 [toolchain]
+# Installed by espup. This is not a rustup release channel.
 channel = "esp"

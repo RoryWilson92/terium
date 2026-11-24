@@ -1,0 +1,26 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["toolchain"],
+  "properties": {
+    "toolchain": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["channel"],
+      "properties": {
+        "channel": {
+          "anyOf": [
+            {
+              "enum": ["stable", "beta", "nightly", "esp"]
+            },
+            {
+              "type": "string",
+              "pattern": "^[0-9]+\\.[0-9]+(\\.[0-9]+)?$"
+            }
+          ]
+        }
+      }
+    }
+  }
+}
