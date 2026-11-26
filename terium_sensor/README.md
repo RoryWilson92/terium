@@ -7,6 +7,8 @@ ESP32 boards around the house stay connected to the house Wi-Fi on its primary c
 
 The classic ESP32 on 2.4 GHz is the default build. The ESP32-C5 on 5 GHz is selected with a build switch, and the 2.4 GHz path will be removed once the C5s are installed.
 
+This folder is the sensing half of [Terium](../README.md). The app is specified in [`terium_app/`](../terium_app/). Run every command in this README from this folder.
+
 ```
 src/main.rs      setup, main loop, mode switching
 src/radio.rs     everything that differs between the classic ESP32 and the C5
@@ -21,7 +23,7 @@ supabase/        schema migrations, local seed and pgTAP tests
 
 ## Local checks
 
-Start Docker and run these from the repository root. The local database uses example positions and a test key. Its API listens on port 55321. The worker needs Python 3.9 or newer with numpy.
+Start Docker and run these. The local database uses example positions and a test key. Its API listens on port 55321. The worker needs Python 3.9 or newer with numpy.
 
 ```sh
 supabase start
@@ -188,7 +190,7 @@ from public.sensors s cross join public.site_config c order by s.id;
 
 ### Worker setup
 
-Run the worker on an always-on computer on the home LAN, with Python 3.9 or newer and numpy (`python3 -m pip install numpy`). Clone the repository there and copy the same `cfg.toml` the boards use. Set `worker_addr` to that computer's address and a UDP port, for example `192.168.1.20:5005`, before building the firmware, and reserve the address in the router's DHCP settings. Allow inbound UDP on that port in the computer's firewall. The address is a build setting rather than a database row, so the app cannot redirect CSI anywhere else. Raw CSI, recordings and models stay in `data/` on that computer (gitignored). Only snapshots go to Supabase, signed with the sensor secret.
+Run the worker on an always-on computer on the home LAN, with Python 3.9 or newer and numpy (`python3 -m pip install numpy`). Clone the repository there, copy the same `cfg.toml` the boards use into `terium_sensor/`, and run the worker from that folder. Set `worker_addr` to that computer's address and a UDP port, for example `192.168.1.20:5005`, before building the firmware, and reserve the address in the router's DHCP settings. Allow inbound UDP on that port in the computer's firewall. The address is a build setting rather than a database row, so the app cannot redirect CSI anywhere else. Raw CSI, recordings and models stay in `terium_sensor/data/` on that computer (gitignored). Only snapshots go to Supabase, signed with the sensor secret.
 
 ```sh
 python3 -m worker run

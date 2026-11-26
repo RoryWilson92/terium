@@ -120,7 +120,7 @@ At the end of every stage, the existing checks pass and the README is up to date
 
 ## References
 
-- [Reviewed repository revision](https://github.com/RoryWilson92/terium-sensor/tree/d78cb31fbe19096bc4aa541ee930f9c6df52b49e) and [existing migration and solver](https://github.com/RoryWilson92/terium-sensor/blob/d78cb31fbe19096bc4aa541ee930f9c6df52b49e/supabase/migrations/20261108221619_trilateration.sql)
+- [Reviewed repository revision](https://github.com/RoryWilson92/terium/tree/d78cb31fbe19096bc4aa541ee930f9c6df52b49e) and [existing migration and solver](https://github.com/RoryWilson92/terium/blob/d78cb31fbe19096bc4aa541ee930f9c6df52b49e/supabase/migrations/20261108221619_trilateration.sql)
 - [ESP32‑C5 Wi‑Fi modes and sniffer frame support](https://docs.espressif.com/projects/esp-idf/en/latest/esp32c5/api-guides/wifi-driver/wifi-modes.html) and [ESP32‑C5 Wi‑Fi FAQ](https://docs.espressif.com/projects/esp-faq/en/latest/esp-faq-en-master.pdf)
 - [ESP32‑C5 CSI format and configuration](https://docs.espressif.com/projects/esp-idf/en/latest/esp32c5/api-guides/wifi-driver/wifi-vendor-features.html), [Espressif 5 GHz CSI example](https://github.com/espressif/esp-csi/blob/master/examples/esp-crab/master_recv/main/app_main.c) and [ESP-NOW channel rules](https://docs.espressif.com/projects/esp-idf/en/latest/esp32c5/api-reference/network/esp_now.html)
 - [ESP32‑C5 Rust target support](https://github.com/esp-rs/esp-idf-sys/blob/master/CHANGELOG.md) and [C5‑Zero hardware reference](https://docs.waveshare.com/ESP32-C5-Zero)
