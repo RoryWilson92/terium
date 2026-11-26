@@ -20,8 +20,9 @@ enabled = false
 [inbucket]
 enabled = false
 
+# The app follows site_config, sensors, device_positions and person_snapshot live.
 [realtime]
-enabled = false
+enabled = true
 
 [storage]
 enabled = false
