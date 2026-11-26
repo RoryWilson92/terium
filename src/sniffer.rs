@@ -1,4 +1,4 @@
-//! 802.11 header parsing, plus the promiscuous callback when built for the ESP32.
+//! Device-mode capture: 802.11 header parsing, plus the promiscuous callback when built for the ESP32.
 //! `parse` allocates nothing and is tested on the host.
 
 /// Six-byte 802.11 address.
@@ -61,7 +61,7 @@ fn has_ssid(mut tags: &[u8], ssid: &[u8]) -> bool {
 }
 
 #[cfg(target_os = "espidf")]
-pub use driver::{enable, Event, CHANNEL_SIZE, DROPS};
+pub use driver::{start, Event, CHANNEL_SIZE, DROPS, SNIFFING};
 
 #[cfg(target_os = "espidf")]
 mod driver {
@@ -69,7 +69,7 @@ mod driver {
     use crate::{unix_secs, CONFIG};
     use esp_idf_svc::sys::*;
     use std::ffi::c_void;
-    use std::sync::atomic::{AtomicU32, Ordering};
+    use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
     use std::sync::mpsc::{sync_channel, Receiver, SyncSender, TrySendError};
     use std::sync::OnceLock;
 
@@ -87,10 +87,12 @@ mod driver {
     pub const CHANNEL_SIZE: usize = 1024;
     /// Frames dropped because that queue was full.
     pub static DROPS: AtomicU32 = AtomicU32::new(0);
+    /// Device mode. Promiscuous mode stays on in Person mode, for CSI, but frames are discarded.
+    pub static SNIFFING: AtomicBool = AtomicBool::new(true);
     static SENDER: OnceLock<SyncSender<Event>> = OnceLock::new();
 
     /// Enable promiscuous RX of management and data frames, and return the queue.
-    pub fn enable() -> anyhow::Result<Receiver<Event>> {
+    pub fn start() -> anyhow::Result<Receiver<Event>> {
         let (tx, rx) = sync_channel(CHANNEL_SIZE);
         anyhow::ensure!(SENDER.set(tx).is_ok(), "Sniffer already enabled");
         let filter = wifi_promiscuous_filter_t {
@@ -106,7 +108,8 @@ mod driver {
 
     /// Runs in the Wi-Fi task. Do not allocate or log here.
     unsafe extern "C" fn receive(buf: *mut c_void, kind: wifi_promiscuous_pkt_type_t) {
-        if kind != wifi_promiscuous_pkt_type_t_WIFI_PKT_MGMT
+        if !SNIFFING.load(Ordering::Relaxed)
+            || kind != wifi_promiscuous_pkt_type_t_WIFI_PKT_MGMT
             && kind != wifi_promiscuous_pkt_type_t_WIFI_PKT_DATA
         {
             return;
@@ -135,7 +138,8 @@ mod driver {
 mod tests {
     use super::*;
 
-    /// Supported layouts only: short input, To-DS data, From-DS data, and a truncated SSID element.
+    /// Supported layouts only: short input, To-DS data, From-DS data, action frames, and a
+    /// truncated SSID element.
     #[test]
     fn parses_only_supported_frames_and_bounds_checks_tags() {
         let mut frame = [0; 42];
@@ -167,6 +171,9 @@ mod tests {
                 ssid_matches: false
             })
         );
+        // Action frames, which carry the boards' ESP-NOW probes, are never devices.
+        frame[0] = 0xd0;
+        assert_eq!(parse(&frame, b"mesh"), None);
         frame[0] = 0x80;
         frame[36..].copy_from_slice(b"\0\x04mesh");
         assert_eq!(

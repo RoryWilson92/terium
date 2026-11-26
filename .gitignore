@@ -6,3 +6,6 @@
 /supabase/.temp/
 .DS_Store
 .vscode/
+# Person-mode recordings and models stay on the LAN computer.
+/data/
+__pycache__/
