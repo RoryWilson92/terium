@@ -1,6 +1,6 @@
 //! Station connection and SNTP. Power save stays off so frames between beacons are received.
 
-use crate::{sniffer::Mac, CONFIG, UPLOAD_INTERVAL};
+use crate::{radio, sniffer::Mac, CONFIG, UPLOAD_INTERVAL};
 use anyhow::{anyhow, ensure, Result};
 use esp_idf_svc::{
     eventloop::EspSystemEventLoop,
@@ -15,7 +15,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-/// Join `cfg.toml`'s network and disable Wi-Fi power save.
+/// Join `cfg.toml`'s network on this chip's band and disable Wi-Fi power save.
 ///
 /// The returned NVS partition lets the PHY store RF calibration. It is not passed
 /// to the Wi-Fi driver, so the station configuration stays in RAM and comes from
@@ -41,6 +41,7 @@ pub fn start() -> Result<(EspWifi<'static>, EspDefaultNvsPartition)> {
         ..Default::default()
     }))?;
     wifi.start()?;
+    radio::set_band()?;
     // Modem sleep would drop most of the frames the sniffer is here to hear.
     unsafe { esp!(esp_wifi_set_ps(wifi_ps_type_t_WIFI_PS_NONE))? };
     Ok((wifi, nvs))

@@ -1,9 +1,11 @@
 # Copy to cfg.toml (gitignored) and rebuild. The same values go on every board.
 # Set log_serial = true only while that board is plugged in for debugging.
 [terium_sensor]
-wifi_ssid = "Your 2.4 GHz Wi-Fi"
+wifi_ssid = "Your Wi-Fi"
 wifi_psk = "your-wifi-password"
 supabase_url = "https://your-project-ref.supabase.co"
 supabase_key = "sb_publishable_..."
 sensor_key = "your-shared-sensor-secret"
+# The Person-mode worker on the LAN. Reserve its address in the router's DHCP settings.
+worker_addr = "192.168.1.20:5005"
 log_serial = false

@@ -1,0 +1,8 @@
+# The ESP32-C5 build, layered over config.toml:
+#   cargo --config .cargo/esp32c5.toml build --release
+# The classic ESP32 stays the default until the C5s are installed.
+[build]
+target = "riscv32imac-esp-espidf"
+
+[env]
+MCU = "esp32c5"
